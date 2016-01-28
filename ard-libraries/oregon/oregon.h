@@ -3,6 +3,7 @@ Oregon Library for Arduino
 ================================
 
 Released under the MIT license.
+Very much inspired by http://www.connectingstuff.net/blog/encodage-protocoles-oregon-scientific-sur-arduino/#comment-60013
 */
 
 #ifndef Oregon_h
