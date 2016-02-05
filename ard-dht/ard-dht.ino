@@ -8,17 +8,36 @@
    - oregon lib from https://github.com/r2d2/ard-stuff/ard-libraries
 */
 
-#include <DHT.h>
 #include <LowPower.h>
+#include <DHT.h>
 #include <oregon.h>
 
+//#define SERIALLOG
+
 // set up the hardware pins
-byte sensorPin = 3; // digital pin for DHT sensor
-byte txPin = 4; // digital pin for RF transmitter
-byte ledPin = 13; // digital pin for LED
+byte sensorPwrPin = 3; // digital pin for DHT sensor power
+byte sensorPin = 4; // digital pin for DHT sensor
+byte txPwrPin = 5; // digital pin for RF transmitter power
+byte txPin = 6; // digital pin for RF transmitter
+byte ledPin = 7; // digital pin for LED
+byte interruptPin = 2; // Interrupt to use to wake up
 
 DHT sensor; // create the sensor object
 Oregon oregon(txPin); // create the oregon object
+
+// Note : 1,8Mohm & 4,7uF -> 5,1s
+
+/* ISR called when waking up */
+/* Used there to empty the capacitor */
+void wake ()
+{
+  // empty capacitor
+  pinMode(interruptPin, OUTPUT);
+  digitalWrite(interruptPin, LOW);
+
+  // switch again as input for next interrupt
+  pinMode(interruptPin, INPUT);
+}
 
 void setup()
 {
@@ -29,10 +48,23 @@ void setup()
   sensor.setup(sensorPin);
   oregon.setup(oregon_type, oregon_channel, 0xBB);
 
+  pinMode(sensorPwrPin, OUTPUT);
+  digitalWrite(sensorPwrPin, HIGH);
+  pinMode(txPwrPin, OUTPUT);
+  digitalWrite(txPwrPin, HIGH);
   pinMode(ledPin, OUTPUT);
 
+  // empty capacitor
+  pinMode(interruptPin, OUTPUT);
+  digitalWrite(interruptPin, LOW);
+
+  // switch again as input for next interrupt
+  pinMode(interruptPin, INPUT);
+
+#ifdef SERIALLOG
   Serial.begin(9600);
   Serial.println("Temperature and Humidity Sender");
+#endif
 }
 
 long readVcc() {
@@ -64,11 +96,46 @@ long readVcc() {
 
 void loop()
 {
-  byte index;
+  // wake() will be called when pin D2 goes high
+  attachInterrupt (digitalPinToInterrupt(interruptPin), wake, HIGH);
+
+  // Fall into deep sleep : only the external interrupt can wake us up.
+  LowPower.powerDown(SLEEP_FOREVER, ADC_OFF, BOD_OFF); 
+
+  detachInterrupt (digitalPinToInterrupt(interruptPin));
+
+  // power on every thing : sensor & RF link
+  digitalWrite(sensorPwrPin, HIGH);
+  digitalWrite(txPwrPin, HIGH);
+
+  // Let power settle on peripherals
+  // According to DHT datasheet, 1s is necessary to have everything settled correctly
+  // Sleep for 1 s with ADC module and BOD module off
+  LowPower.powerDown(SLEEP_1S, ADC_OFF, BOD_OFF);
+
+  // Call the function actually doing the work
+  readAndSend();
+
+  // power off every thing : sensor and RF link
+  digitalWrite(sensorPwrPin, LOW);
+  digitalWrite(txPwrPin, LOW);
+
+}
+
+void blinkLed()
+{
+  digitalWrite(ledPin, HIGH);
+  delay(5);
+  digitalWrite(ledPin, LOW);
+}
+
+void readAndSend()
+{
   int Vcc = readVcc();
   double t = sensor.getTemperature();
   double h = sensor.getHumidity();
 
+#ifdef SERIALLOG
   // output readings to the serial monitor
   Serial.print(t);
   Serial.print("C ");
@@ -76,24 +143,12 @@ void loop()
   Serial.println("%");
   Serial.print(Vcc);
   Serial.println("mV");
+  Serial.flush();
+#endif
 
   oregon.send(t, h, Vcc > 1200 * 2 ? 1 : 0); // send the sensor readings
 
-  // Wait for one minute
-  for ( index = 0 ; index < 60 / 8 ; index++ )
-  {
-    // Sleep for 8 s with ADC module and BOD module off
-    LowPower.powerDown(SLEEP_8S, ADC_OFF, BOD_OFF);
-  }
-
   blinkLed(); // flash the led
-}
-
-void blinkLed()
-{
-  digitalWrite(ledPin, HIGH);
-  delay(30);
-  digitalWrite(ledPin, LOW);
 }
 
 
