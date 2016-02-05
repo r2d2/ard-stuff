@@ -97,7 +97,7 @@ long readVcc() {
 void loop()
 {
   // wake() will be called when pin D2 goes high
-  attachInterrupt (digitalPinToInterrupt(interruptPin), wake, HIGH);
+  attachInterrupt (digitalPinToInterrupt(interruptPin), wake, RISING);
 
   // Fall into deep sleep : only the external interrupt can wake us up.
   LowPower.powerDown(SLEEP_FOREVER, ADC_OFF, BOD_OFF); 
