@@ -45,14 +45,19 @@ void setup()
   byte oregon_channel = 0x10; // 10 : 1, 20 : 2... -> 70 : 7
   byte oregon_id = oregon_id;
 
-  sensor.setup(sensorPin);
-  oregon.setup(oregon_type, oregon_channel, 0xBB);
-
+  // turn on radio & DHT
   pinMode(sensorPwrPin, OUTPUT);
   digitalWrite(sensorPwrPin, HIGH);
   pinMode(txPwrPin, OUTPUT);
   digitalWrite(txPwrPin, HIGH);
   pinMode(ledPin, OUTPUT);
+
+  // Wait 1s to let DHT settle
+  delay(1000);
+
+  // now autodetection of sensor type can take place
+  sensor.setup(sensorPin);
+  oregon.setup(oregon_type, oregon_channel, 0xBB);
 
   // empty capacitor
   pinMode(interruptPin, OUTPUT);
@@ -100,7 +105,7 @@ void loop()
   attachInterrupt (digitalPinToInterrupt(interruptPin), wake, RISING);
 
   // Fall into deep sleep : only the external interrupt can wake us up.
-  LowPower.powerDown(SLEEP_FOREVER, ADC_OFF, BOD_OFF); 
+  LowPower.powerDown(SLEEP_FOREVER, ADC_OFF, BOD_OFF);
 
   detachInterrupt (digitalPinToInterrupt(interruptPin));
 
@@ -146,7 +151,8 @@ void readAndSend()
   Serial.flush();
 #endif
 
-  oregon.send(t, h, Vcc > 1200 * 2 ? 1 : 0); // send the sensor readings
+  if ( ( t != NAN ) && ( h != NAN ) )
+    oregon.send(t, h, Vcc > 1200 * 2 ? 1 : 0); // send the sensor readings
 
   blinkLed(); // flash the led
 }
