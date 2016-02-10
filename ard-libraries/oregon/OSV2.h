@@ -6,25 +6,23 @@ Released under the MIT license.
 Very much inspired by http://www.connectingstuff.net/blog/encodage-protocoles-oregon-scientific-sur-arduino/#comment-60013
 */
 
-#ifndef Oregon_h
-#define Oregon_h
+#ifndef OSV2_h
+#define OSV2_h
 
 #include "Arduino.h"
 
-class Oregon
+class OSV2
 {
 public:
-
-  Oregon(byte txPin);
-  void setup(byte* type, byte channel, byte id);
-  void send(double temperature, double humidity, byte battery_level);
+  OSV2(byte txPin);
+  void send();
 
 protected:
-
+  byte OregonMessageBuffer[13];
   // Buffer for Oregon message
-  byte OregonMessageBuffer[9];
   byte m_txPin; // digital pin for transmitter
 
+  virtual int getMessageSize(void) = 0;
   void doubleToBcd(double in, byte *bcd0, byte *bcd1, byte *bcd2);
   void sendZero(void);
   void sendOne(void);
@@ -35,8 +33,6 @@ protected:
   void sendPreamble(void);
   void sendPostamble(void);
   void sendSync(void);
-  int Sum(byte count);
-  void calculateAndSetChecksum();
 
 };
 

@@ -10,7 +10,7 @@
 
 #include <LowPower.h>
 #include <DHT.h>
-#include <oregon.h>
+#include <OregonTemp.h>
 
 //#define SERIALLOG
 
@@ -23,7 +23,9 @@ byte ledPin = 7; // digital pin for LED
 byte interruptPin = 2; // Interrupt to use to wake up
 
 DHT sensor; // create the sensor object
-Oregon oregon(txPin); // create the oregon object
+OregonTemp oregon(txPin); // create the oregon object
+byte oregon_channel = 0x10; // 10 : 1, 20 : 2... -> 70 : 7
+byte oregon_id = 0xBB;
 
 // Note : 1,8Mohm & 4,7uF -> 5,1s
 
@@ -41,10 +43,6 @@ void wake ()
 
 void setup()
 {
-  byte oregon_type[2] = {0x1A, 0x2D};
-  byte oregon_channel = 0x10; // 10 : 1, 20 : 2... -> 70 : 7
-  byte oregon_id = oregon_id;
-
   // turn on radio & DHT
   pinMode(sensorPwrPin, OUTPUT);
   digitalWrite(sensorPwrPin, HIGH);
@@ -57,7 +55,6 @@ void setup()
 
   // now autodetection of sensor type can take place
   sensor.setup(sensorPin);
-  oregon.setup(oregon_type, oregon_channel, 0xBB);
 
   // empty capacitor
   pinMode(interruptPin, OUTPUT);
@@ -151,8 +148,8 @@ void readAndSend()
   Serial.flush();
 #endif
 
-  if ( ( t != NAN ) && ( h != NAN ) )
-    oregon.send(t, h, Vcc > 1200 * 2 ? 1 : 0); // send the sensor readings
+  if ( ( t != 0 ) && ( h != 0 ) )
+    oregon.send(oregon_channel, oregon_id, t, h, Vcc > 1200 * 2 ? 1 : 0); // send the sensor readings
 
   blinkLed(); // flash the led
 }
