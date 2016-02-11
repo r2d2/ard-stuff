@@ -17,7 +17,7 @@ OregonPower oregon(txPin); // create the oregon object
 uint64_t totalEnergy = 0;
 void repeatMe() {
   double Irms = emon1.calcIrms(1480);  // Calculate Irms only
-  totalEnergy += Irms * 230.0;
+  totalEnergy += (uint64_t)(Irms * 230.0);
 
   Serial.print(Irms * 230.0);       // Apparent power
   Serial.print(" ");

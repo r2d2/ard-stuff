@@ -20,28 +20,33 @@ void OregonPower::calculateAndSet16bitsChecksum()
     OregonMessageBuffer[messageSize+1] = (int(sum>>4)&0x0F);
 }
 
+#define ENERGY_COEF 497/500/16
+
 /**
  * \brief    Send an Oregon message
  * \param    iPower   Instaneous power (in Watt)
- * \param    totalEnergy   total consumed power (in W/h)
+ * \param    totalEnergy   total consumed power (in W/s)
  */
 void OregonPower::send(int iPower,uint64_t totalEnergy)
 {
+
+  totalEnergy = totalEnergy * ENERGY_COEF;
 
   OregonMessageBuffer[0] = 0x62;
   OregonMessageBuffer[1] = 0x80;
   OregonMessageBuffer[2] = 0x3C; // 3C HP, 3D HC
 
   // Power
-  OregonMessageBuffer[3]  = iPower         & 0xF0;
+  OregonMessageBuffer[3]  = (iPower        & 0xF0 ) + 0x08;
   OregonMessageBuffer[4]  = (iPower >> 8 ) & 0xFF;
+  OregonMessageBuffer[5]  = (iPower >> 12 ) & 0x0F;
 
-  OregonMessageBuffer[5]  = totalEnergy           & 0xFF;
-  OregonMessageBuffer[6]  = ( totalEnergy >> 8  ) & 0xFF;
-  OregonMessageBuffer[7]  = ( totalEnergy >> 16 ) & 0xFF;
-  OregonMessageBuffer[8]  = ( totalEnergy >> 24 ) & 0xFF;
-  OregonMessageBuffer[9]  = ( totalEnergy >> 32 ) & 0xFF;
-  OregonMessageBuffer[10] = ( totalEnergy >> 40 ) & 0xFF;
+  OregonMessageBuffer[5] += ( totalEnergy << 4  ) & 0xF0;
+  OregonMessageBuffer[6]  = ( totalEnergy >> 4  ) & 0xFF;
+  OregonMessageBuffer[7]  = ( totalEnergy >> 12 ) & 0xFF;
+  OregonMessageBuffer[8]  = ( totalEnergy >> 20 ) & 0xFF;
+  OregonMessageBuffer[9]  = ( totalEnergy >> 28 ) & 0xFF;
+  OregonMessageBuffer[10] = ( totalEnergy >> 36 ) & 0xFF;
 
   // Calculate the checksum
   calculateAndSet16bitsChecksum();
