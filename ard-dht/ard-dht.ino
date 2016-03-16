@@ -148,7 +148,7 @@ void readAndSend()
   Serial.flush();
 #endif
 
-  if ( ( t != 0.0 ) && ( h != 0.0 ) )
+  if ( ! ( isnan(t) || isnan(h) ) )
     oregon.send(oregon_channel, oregon_id, t, h, (Vcc > (1200 * 3)) ? 1 : 0); // send the sensor readings
 
   blinkLed(); // flash the led
